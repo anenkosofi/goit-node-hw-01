@@ -1,66 +1,42 @@
 const fs = require('node:fs/promises');
 const path = require('node:path');
 
-const contactsPath = path.resolve('./db/contacts.json');
-
-async function readFile() {
-  try {
-    return await fs.readFile(contactsPath, {
-      encoding: 'utf8',
-    });
-  } catch (error) {
-    console.error(error);
-  }
-}
+const contactsPath = path.join(__dirname, 'db', 'contacts.json');
 
 async function listContacts() {
-  try {
-    const contactList = await readFile();
-    console.table(JSON.parse(contactList));
-  } catch (error) {
-    console.error(error);
-  }
+  const data = await fs.readFile(contactsPath);
+  const contactList = JSON.parse(data);
+  return contactList;
 }
 
 async function getContactById(contactId) {
-  try {
-    const contactList = await readFile();
-    console.log(JSON.parse(contactList).find(({ id }) => id === contactId));
-  } catch (error) {
-    console.error(error);
+  const contactList = await listContacts();
+  const result = contactList.find(({ id }) => id === contactId);
+  if (!result) {
+    return null;
   }
+  return result;
 }
 
 async function removeContact(contactId) {
-  try {
-    const contactList = await readFile();
-    const updatedContactList = JSON.parse(contactList).filter(
-      ({ id }) => id !== contactId
-    );
-    await fs.writeFile(contactsPath, JSON.stringify(updatedContactList));
-    const newContactList = await readFile();
-    console.table(JSON.parse(newContactList));
-  } catch (error) {
-    console.error(error);
+  const contactList = await listContacts();
+  const index = contactList.findIndex(({ id }) => id === contactId.toString());
+  if (index === -1) {
+    return null;
   }
+  const [removedContact] = contactList.splice(index, 1);
+  await fs.writeFile(contactsPath, JSON.stringify(contactList));
+  return removedContact;
 }
 
 async function addContact(name, email, phone) {
-  try {
-    const contactList = await readFile();
-    const parsedContactList = JSON.parse(contactList);
-    const lastElementId = Number(
-      parsedContactList[parsedContactList.length - 1].id
-    );
-    const nextElementId = lastElementId + 1;
-    const contact = { id: nextElementId.toString(), name, email, phone };
-    const updatedContactList = [...parsedContactList, contact];
-    await fs.writeFile(contactsPath, JSON.stringify(updatedContactList));
-    const newContactList = await readFile();
-    console.table(JSON.parse(newContactList));
-  } catch (error) {
-    console.error(error);
-  }
+  const contactList = await listContacts();
+  const lastElementId = Number(contactList[contactList.length - 1].id);
+  const nextElementId = lastElementId + 1;
+  const newContact = { id: nextElementId.toString(), name, email, phone };
+  contactList.push(newContact);
+  await fs.writeFile(contactsPath, JSON.stringify(contactList));
+  return newContact;
 }
 
 module.exports = {

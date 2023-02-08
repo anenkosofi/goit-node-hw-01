@@ -17,22 +17,29 @@ program.parse(process.argv);
 
 const argv = program.opts();
 
-function invokeAction({ action, id, name, email, phone }) {
+async function invokeAction({ action, id, name, email, phone }) {
   switch (action) {
     case 'list':
-      listContacts();
+      const contacts = await listContacts();
+      console.table(contacts);
       break;
 
     case 'get':
-      getContactById(id);
+      const contact = await getContactById(id);
+      if (!contact) {
+        throw new Error(`Contact with id ${id} does not exist`);
+      }
+      console.log(contact);
       break;
 
     case 'add':
-      addContact(name, email, phone);
+      const addedContact = await addContact(name, email, phone);
+      console.log(addedContact);
       break;
 
     case 'remove':
-      removeContact(id);
+      const removedContact = await removeContact(id);
+      console.log(removedContact);
       break;
 
     default:
